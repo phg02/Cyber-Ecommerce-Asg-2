@@ -81,7 +81,7 @@
                 <!-- /.div -->
                 <div class="row">
                     <div class="btn-group alg-right-pad">
-                        <button type="button" class="btn btn-default"><strong>1235  </strong>items</button>
+                        <button type="button" class="btn btn-default"><strong>3  </strong>items</button>
                         <div class="btn-group">
                             <button type="button" class="btn btn-danger dropdown-toggle" data-toggle="dropdown">
                                 Sort Products &nbsp;
@@ -101,45 +101,20 @@
                 </div>
                 <!-- /.row -->
                 <div class="row">
+                    <% products.forEach(product => { %>
                     <div class="col-md-4 text-center col-sm-6 col-xs-6">
                         <div class="thumbnail product-box">
-                            <img src="img/bronton.jpg" alt="" />
+                            <img src="<%= product.image %>" alt="" />
                             <div class="caption">
-                                <h3><a href="#">Bronton </a></h3>
-                                <p>Price : <strong>$ 3000</strong>  </p>
+                                <h3><a href="#"><%= product.name %></a></h3>
+                                <p>Price : <strong>$ <%= product.price %></strong></p>
                                 
                                 
                                 <p><a href="#" class="btn btn-success" role="button">Add To Cart</a> <a href="#" class="btn btn-primary" role="button">See Details</a></p>
                             </div>
                         </div>
                     </div>
-                    <!-- /.col -->
-                    <div class="col-md-4 text-center col-sm-6 col-xs-6">
-                        <div class="thumbnail product-box">
-                            <img src="/img/dummyimg.jpg" alt="" />
-                            <div class="caption">
-                                <h3><a href="#">E-BMX </a></h3>
-                                <p>Price : <strong>$ 2000</strong>  </p>
-                                
-                                
-                                <p><a href="#" class="btn btn-success" role="button">Add To Cart</a> <a href="#" class="btn btn-primary" role="button">See Details</a></p>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-md-4 text-center col-sm-6 col-xs-6">
-                        <div class="thumbnail product-box">
-                            <img src="/img/f65.jpg" alt="" />
-                            <div class="caption">
-                                <h3><a href="#">F-65 </a></h3>
-                                <p>Price : <strong>$ 700</strong>  </p>
-                                
-                                
-                                <p><a href="#" class="btn btn-success" role="button">Add To Cart</a> <a href="#" class="btn btn-primary" role="button">See Details</a></p>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /.col -->
+                    <% }); %>
                 </div>
                 <!-- /.row -->
 
