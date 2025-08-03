@@ -36,7 +36,7 @@
 
 
                 <ul class="nav navbar-nav navbar-right">
-                    <li><a href="#">Track Order</a></li>
+                    <li><a href="/chart">Cart</a></li>
                     <li><a href="#">Login</a></li>
                     <li><a href="#">Signup</a></li>
 
@@ -108,9 +108,9 @@
                             <div class="caption">
                                 <h3><a href="#"><%= product.name %></a></h3>
                                 <p>Price : <strong>$ <%= product.price %></strong></p>
-                                
-                                
-                                <p><a href="#" class="btn btn-success" role="button">Add To Cart</a> <a href="#" class="btn btn-primary" role="button">See Details</a></p>
+
+
+                                <p><a href="/add-to-cart?productId=<%= product.id%>" class="btn btn-success" role="button">Add To Cart</a> <a href="#" class="btn btn-primary" role="button">See Details</a></p>
                             </div>
                         </div>
                     </div>

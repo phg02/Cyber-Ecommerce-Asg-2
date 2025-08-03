@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout</title>
+    <link rel="stylesheet" href="/css/payment.css" />
+    <script src="/js/billing.js" defer></script>
+    <!-- Google Pay API -->
+    <script async src="https://pay.google.com/gp/p/js/pay.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Provide Billing Information</h2>
+      
+      <!-- Display cart total -->
+      <div class="cart-summary" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+        <h4>Order Summary</h4>
+        <div class="cart-items">
+          <% cart.forEach(function(item) { %>
+            <div class="cart-item" style="display: flex; justify-content: space-between; margin: 5px 0;">
+              <span><%= item.name %> x <%= item.quantity || 1 %></span>
+              <span>$<%= (item.price * (item.quantity || 1)).toFixed(2) %></span>
+            </div>
+          <% }); %>
+        </div>
+        <hr style="margin: 10px 0;">
+        <div class="total-amount" data-total="<%= total %>" style="font-weight: bold; font-size: 18px; display: flex; justify-content: space-between;">
+          <span>Total:</span>
+          <span>$<%= total.toFixed(2) %></span>
+        </div>
+      </div>
+      
+      <div class="checkout">
+        <!-- Unified Form: Billing (Left) and Payment (Right) -->
+        <form class="checkout-form" method="POST">
+          <div class="form-sections">
+            <!-- Billing Info Left -->
+            <div class="billing-form">
+              <h3>Billing address</h3>
+              <div class="row">
+                <input type="text" name="firstName" placeholder="First name" required />
+                <input type="text" name="lastName" placeholder="Last name" required />
+              </div>
+              <div class="row">
+                <input type="text" name="username" placeholder="@ Username" required />
+              </div>
+              <div class="row">
+                <input type="email" name="email" placeholder="you@example.com" />
+              </div>
+              <div class="row">
+                <input type="text" name="address" placeholder="1234 Main St" required />
+              </div>
+              <div class="row">
+                <input type="text" name="apartment" placeholder="Apartment or suite" />
+              </div>
+              <div class="row three">
+                <select name="country" required>
+                  <option value="">Choose country</option>
+                  <option value="US">United States</option>
+                  <option value="VN">Vietnam</option>
+                </select>
+                <select name="city" required>
+                  <option value="">Choose city</option>
+                  <option value="CA">California</option>
+                  <option value="HN">Hanoi</option>
+                </select>
+                <input type="text" name="zipCode" placeholder="Zip" required />
+              </div>
+            </div>
+
+            <!-- Payment Options Right -->
+            <div class="payment-options">
+              <h3>Select A Payment Option</h3>
+              <label>
+                <input type="radio" name="payment" value="visa" required />
+                <img src="https://img.icons8.com/color/48/000000/visa.png" />
+                VISA
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="payment"
+                  value="mastercard"
+                  required
+                />
+                <img
+                  src="https://img.icons8.com/color/48/000000/mastercard.png"
+                />
+                MasterCard
+              </label>
+              <label>
+                <input type="radio" name="payment" value="paypal" required />
+                <img src="https://img.icons8.com/color/48/000000/paypal.png" />
+                PayPal
+              </label>
+              <label>
+                <input type="radio" name="payment" value="googlepay" required />
+                <img
+                  src="https://img.icons8.com/?size=100&id=q1PoZVxoBHbS&format=png&color=000000"
+                  width="48"
+                />
+                Google Pay
+              </label>
+              <label>
+                <input type="radio" name="payment" value="vnpay" required />
+                <img
+                  src="https://images.seeklogo.com/logo-png/42/1/vnpay-logo-png_seeklogo-428006.png"
+                  width="60"
+                />
+                VN Pay
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="checkout-button">
+            Continue to checkout
+          </button>
+        </form>
+      </div>
+          </div>
+    </body>
+  </html>
