@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const https = require('https');
+const Order = require('../models/Order');
 const router = express.Router();
 
 const CLIENT = process.env.PAYPAL_CLIENT_ID;
@@ -8,11 +9,6 @@ const SECRET = process.env.PAYPAL_CLIENT_SECRET;
 // Use sandbox by default, can be overridden with environment variable
 const PAYPAL_API = process.env.PAYPAL_API || 'https://api-m.sandbox.paypal.com';
 
-// Debug logging to help identify missing environment variables
-console.log('PayPal Configuration:');
-console.log('CLIENT_ID:', CLIENT ? 'Set' : 'MISSING');
-console.log('CLIENT_SECRET:', SECRET ? 'Set' : 'MISSING');
-console.log('PAYPAL_API:', PAYPAL_API);
 
 // Function to get PayPal access token
 async function generateAccessToken() {
@@ -69,10 +65,8 @@ router.get('/', async (req, res) => {
     const accessToken = await generateAccessToken();
     console.log('Access token generated successfully');
     
-    // Get amount from query parameter or use default
-    const amount = req.query.amount || '20.00';
+    const amount = req.query.amount;
     
-    // Validate amount
     if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       return res.status(400).send('Invalid amount provided');
     }
@@ -165,18 +159,35 @@ router.post('/complete-order', async (req, res) => {
   try {
     const { paymentData, billingInfo, paymentMethod } = req.body;
     
-    // Here you would typically:
-    // 1. Save the order to your database
-    // 2. Clear the cart
-    // 3. Send confirmation email
-    // 4. Update inventory
+    // Create new order object
+    const newOrder = new Order({
+      firstName: billingInfo.firstName || billingInfo.firstname || '',
+      lastName: billingInfo.lastName || billingInfo.lastname || '',
+      email: billingInfo.email || '',
+      address: billingInfo.address || '',
+      country: billingInfo.country || '',
+      city: billingInfo.city || '',
+      state: billingInfo.state || '',
+      zipCode: billingInfo.zipCode || billingInfo.zipcode || '',
+      items: req.session.cart || [],
+      total: paymentData.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value || 0,
+      paymentMethod: paymentMethod,
+      paymentId: paymentData.id || paymentData.purchase_units?.[0]?.payments?.captures?.[0]?.id,
+      paymentStatus: true,
+      orderStatus: 'confirmed'
+    });
     
-    console.log('Completing order with:', { paymentData, billingInfo, paymentMethod });
+    // Save order to database
+    const savedOrder = await newOrder.save();
     
-    // For now, just return success
+    // Clear the cart after successful order creation
+    req.session.cart = [];
+    
+    console.log('Order saved successfully:', savedOrder._id);
+    
     res.json({ 
       success: true, 
-      orderId: `ORD-${Date.now()}`,
+      orderId: savedOrder._id,
       message: 'Order completed successfully'
     });
     

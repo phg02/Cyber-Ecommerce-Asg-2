@@ -74,16 +74,68 @@ app.post('/cart/remove', (req, res) => {
 
 
 app.get('/checkout', (req, res) => {
-    if (!req.session.cart || req.session.cart.length === 0) {
+    // Allow access if there are payment status parameters (success/cancel/error)
+    const hasPaymentStatus = req.query.paypal_status || req.query.stripe_status || req.query.vnpay_status;
+    
+    if (!hasPaymentStatus && (!req.session.cart || req.session.cart.length === 0)) {
         return res.redirect('/');
     }
 
-    const total = req.session.cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
-    res.render('paymentPage', { cart: req.session.cart, total });
-}
-);
+    // For payment status callbacks, use empty cart and zero total
+    const cart = req.session.cart || [];
+    const total = cart.length > 0 ? cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0) : 0;
+    res.render('paymentPage', { cart: cart, total: total });
+});
+
+// Generic order creation endpoint for frontend payment methods (Google Pay, etc.)
+app.post('/create-order', async (req, res) => {
+    try {
+        const { billingInfo, paymentData, paymentMethod, total } = req.body;
+        
+        // Create new order object
+        const newOrder = new Order({
+            firstName: billingInfo.firstName || billingInfo.firstname || '',
+            lastName: billingInfo.lastName || billingInfo.lastname || '',
+            email: billingInfo.email || '',
+            address: billingInfo.address || '',
+            country: billingInfo.country || '',
+            city: billingInfo.city || '',
+            state: billingInfo.state || '',
+            zipCode: billingInfo.zipCode || billingInfo.zipcode || '',
+            items: req.session.cart || [],
+            total: total || 0,
+            paymentMethod: paymentMethod,
+            paymentId: paymentData.orderId || paymentData.id || `${paymentMethod.toUpperCase()}-${Date.now()}`,
+            paymentStatus: true,
+            orderStatus: 'confirmed'
+        });
+        
+        // Save order to database
+        const savedOrder = await newOrder.save();
+        
+        // Clear cart after successful order creation
+        req.session.cart = [];
+        
+        console.log(`${paymentMethod} order saved successfully:`, savedOrder._id);
+        
+        res.json({ 
+            success: true, 
+            orderId: savedOrder._id,
+            message: 'Order created successfully'
+        });
+        
+    } catch (error) {
+        console.error('Order creation error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to create order' 
+        });
+    }
+});
 
 app.use("/paypal", require('./router/paypalRouter'));
+app.use("/stripe", require('./router/stripeRouter'));
+app.use("/vnpay", require('./router/vnPayRouter'));
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

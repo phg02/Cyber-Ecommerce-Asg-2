@@ -19,25 +19,36 @@ document.querySelector('.checkout-form').addEventListener('submit', async functi
 
   const paymentMethod = selectedPayment.value;
 
-  // Billing data (you can collect more fields if needed)
   const formData = new FormData(e.target);
   const billingInfo = Object.fromEntries(formData.entries());
 
-  // Show loading state
   const submitButton = document.querySelector('.checkout-button');
   const originalText = submitButton.textContent;
   submitButton.textContent = 'Processing...';
   submitButton.disabled = true;
 
   try {
-    // Simulate switching logic based on payment method
     switch (paymentMethod) {
       case "visa":
       case "mastercard":
-        // Stripe logic here
         console.log("Redirecting to Stripe...");
-        // window.location.href = "/stripe/checkout";
-        alert("Stripe integration coming soon!");
+        const response = await fetch('/stripe/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            billingInfo: billingInfo
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create Stripe session');
+        }
+
+        const data = await response.json();
+        window.location.href = data.url;
         break;
         
       case "paypal":
@@ -61,8 +72,29 @@ document.querySelector('.checkout-form').addEventListener('submit', async functi
       case "vnpay":
         // VNPay logic here
         console.log("Redirecting to VNPay...");
-        alert("VNPay integration coming soon!");
-        // window.location.href = "/vnpay/checkout";
+        
+        // Get cart total
+        const vnpayTotalElement = document.querySelector('.total-amount') || document.querySelector('[data-total]');
+        const vnpayTotal = vnpayTotalElement ? vnpayTotalElement.textContent.replace(/[^0-9.]/g, '') : '20.00';
+        
+        const vnpayResponse = await fetch('/vnpay/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            amount: parseFloat(vnpayTotal),
+            billingInfo: billingInfo
+          })
+        });
+
+        if (!vnpayResponse.ok) {
+          const vnpayErrorData = await vnpayResponse.json();
+          throw new Error(vnpayErrorData.error || 'Failed to create VNPay session');
+        }
+
+        const vnpayData = await vnpayResponse.json();
+        window.location.href = vnpayData.url;
         break;
         
       default:
@@ -343,29 +375,47 @@ function handleGooglePaySuccess(paymentData, billingInfo, total) {
     // Create order data
     const orderData = {
       paymentMethod: 'googlepay',
-      paymentData: paymentData,
+      paymentData: {
+        orderId: `GP-${Date.now()}`,
+        id: paymentData.paymentMethodData?.tokenizationData?.token || `GP-${Date.now()}`,
+        timestamp: new Date().toISOString()
+      },
       billingInfo: billingInfo,
-      total: total,
-      orderId: `GP-${Date.now()}`,
-      timestamp: new Date().toISOString()
+      total: total
     };
     
-    // Store order data
-    sessionStorage.setItem('orderData', JSON.stringify(orderData));
-    
-    // Clear billing info from session storage
-    sessionStorage.removeItem('billingInfo');
-    
-    // Show success message and redirect (non-blocking)
-    setTimeout(() => {
-      try {
-        alert(`Google Pay payment successful! Order ID: ${orderData.orderId}`);
-        window.location.href = '/';
-      } catch (uiError) {
-        // Fallback redirect
-        window.location.href = '/';
+    // Send order to backend for storage
+    fetch('/create-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(orderData)
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        // Clear billing info from session storage
+        sessionStorage.removeItem('billingInfo');
+        
+        // Show success message and redirect
+        setTimeout(() => {
+          try {
+            alert(`Order completed successfully! Order ID: ${result.orderId}`);
+            window.location.href = '/';
+          } catch (uiError) {
+            // Fallback redirect
+            window.location.href = '/';
+          }
+        }, 100);
+      } else {
+        throw new Error(result.message || 'Failed to create order');
       }
-    }, 100);
+    })
+    .catch(error => {
+      console.error('Error creating order:', error);
+      alert('Payment successful but order creation failed. Please contact support.');
+    });
     
   } catch (error) {
     console.error('Error in handleGooglePaySuccess:', error);
@@ -375,11 +425,17 @@ function handleGooglePaySuccess(paymentData, billingInfo, total) {
 
 
 
-// Check if we're returning from PayPal success page
+// Check if we're returning from payment success/cancel
 document.addEventListener('DOMContentLoaded', function() {
-  // Check URL parameters for PayPal success/cancel
+  // Check URL parameters for payment success/cancel
   const urlParams = new URLSearchParams(window.location.search);
   const paypalStatus = urlParams.get('paypal_status');
+  const stripeStatus = urlParams.get('stripe_status');
+  const vnpayStatus = urlParams.get('vnpay_status');
+  
+  // Debug logging
+  console.log('Payment status check:', { paypalStatus, stripeStatus, vnpayStatus });
+  console.log('Full URL:', window.location.href);
   
   if (paypalStatus === 'success') {
     const paymentData = urlParams.get('payment_data');
@@ -387,6 +443,27 @@ document.addEventListener('DOMContentLoaded', function() {
       handlePayPalSuccess(JSON.parse(decodeURIComponent(paymentData)));
     }
   } else if (paypalStatus === 'cancel') {
-    alert('PayPal payment was cancelled.');
+    alert('Payment was cancelled.');
+  } else if (stripeStatus === 'success') {
+    const orderId = urlParams.get('order_id');
+    console.log('Stripe success with order ID:', orderId);
+    alert('Order completed successfully! Order ID: ' + orderId);
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 1000);
+  } else if (stripeStatus === 'cancel') {
+    alert('Payment was cancelled.');
+  } else if (stripeStatus === 'error') {
+    alert('Payment failed. Please try again.');
+  } else if (vnpayStatus === 'success') {
+    const orderId = urlParams.get('order_id');
+    console.log('VNPay success with order ID:', orderId);
+    alert('Order completed successfully! Order ID: ' + orderId);
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 1000);
+  } else if (vnpayStatus === 'error') {
+    const errorCode = urlParams.get('code');
+    alert('Payment failed. Error code: ' + (errorCode || 'Unknown'));
   }
 });
