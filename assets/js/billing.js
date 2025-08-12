@@ -29,8 +29,7 @@ document.querySelector('.checkout-form').addEventListener('submit', async functi
 
   try {
     switch (paymentMethod) {
-      case "visa":
-      case "mastercard":
+      case "stripe":
         console.log("Redirecting to Stripe...");
         const response = await fetch('/stripe/create-checkout-session', {
           method: 'POST',
