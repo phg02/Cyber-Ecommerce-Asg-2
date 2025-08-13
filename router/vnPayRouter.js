@@ -23,8 +23,8 @@ router.post('/create-checkout-session', async (req, res) => {
 
     console.log(process.env.VNPAY_TMN_CODE, process.env.VNPAY_HASH_SECRET);
     const vnpay = new VNPay({
-        tmnCode: 'G8NK7IRP',
-        secureSecret: '1IRAGF0G2MVZHQVS1SW9Z8KC3HIUELXT',
+        tmnCode: process.env.VNPAY_TMN_CODE,
+        secureSecret: process.env.VNPAY_HASH_SECRET,
         vnpayHost: 'https://sandbox.vnpayment.vn',
         testMode: true,
         hashAlgorithm: 'SHA512',
